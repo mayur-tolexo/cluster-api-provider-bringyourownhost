@@ -49,8 +49,8 @@ type installer struct {
 	logger     logr.Logger
 }
 
-// getSupportedRegistry returns a registry with installers for the supported OS and K8s
-func getSupportedRegistry(ob algo.OutputBuilder) registry {
+// GetSupportedRegistry returns a registry with installers for the supported OS and K8s
+func GetSupportedRegistry(ob algo.OutputBuilder) registry {
 	reg := newRegistry()
 
 	addBundleInstaller := func(osBundle, k8sBundle string, stepProvider algo.K8sStepProvider) {
@@ -142,7 +142,7 @@ func New(downloadPath string, bundleType bundleType, logger logr.Logger) (*insta
 func newUnchecked(currentOs string, bundleType bundleType, downloadPath string, logger logr.Logger, outputBuilder algo.OutputBuilder) (*installer, error) {
 	bd := bundleDownloader{repoAddr: "", bundleType: bundleType, downloadPath: downloadPath, logger: logger}
 
-	reg := getSupportedRegistry(outputBuilder)
+	reg := GetSupportedRegistry(outputBuilder)
 	if len(reg.ListK8s(currentOs)) == 0 {
 		return nil, ErrOsK8sNotSupported
 	}
@@ -228,7 +228,7 @@ func ListSupportedK8s(os string) []string {
 // getSupportedRegistryDescription returns a description registry of supported OS and k8s.
 // It that can only be queried for OS and k8s but cannot be used for install/uninstall.
 func getSupportedRegistryDescription() registry {
-	return getSupportedRegistry(nil)
+	return GetSupportedRegistry(nil)
 }
 
 // PreviewChanges describes the changes to install and uninstall K8s on OS without actually applying them.
@@ -236,7 +236,7 @@ func getSupportedRegistryDescription() registry {
 // Can be invoked on a non-supported OS
 func PreviewChanges(os, k8sVer string) (install, uninstall string, err error) {
 	stepPreviewer := stringPrinter{msgFmt: "# %s"}
-	reg := getSupportedRegistry(&stepPreviewer)
+	reg := GetSupportedRegistry(&stepPreviewer)
 	installer, _ := reg.GetInstaller(os, k8sVer)
 
 	if installer == nil {
