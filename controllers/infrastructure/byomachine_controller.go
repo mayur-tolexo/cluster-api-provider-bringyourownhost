@@ -5,18 +5,20 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -47,6 +49,10 @@ const (
 	ProviderIDSuffixLength = 6
 	// RequeueForbyohost requeue delay for byoh host
 	RequeueForbyohost = 10 * time.Second
+)
+
+var (
+	externalReadyWait = 30 * time.Second
 )
 
 // ByoMachineReconciler reconciles a ByoMachine object
@@ -250,6 +256,11 @@ func (r *ByoMachineReconciler) reconcileNormal(ctx context.Context, machineScope
 		logger.Info("Bootstrap Data Secret not available yet")
 		conditions.MarkFalse(machineScope.ByoMachine, infrav1.BYOHostReady, infrav1.WaitingForBootstrapDataSecretReason, clusterv1.ConditionSeverityInfo, "")
 		return reconcile.Result{}, nil
+	}
+
+	if machineScope.ByoMachine.Spec.InstallerRef != nil {
+		logger.Info("reconcile external installer reference")
+		r.reconcileExternal(ctx, machineScope.Cluster, machineScope.ByoMachine, machineScope.ByoMachine.Spec.InstallerRef)
 	}
 
 	// If there is not yet an byoHost for this byoMachine,
@@ -491,6 +502,8 @@ func (r *ByoMachineReconciler) attachByoHost(ctx context.Context, machineScope *
 	}
 	logger.Info("Successfully attached Byohost", "byohost", host.Name)
 	machineScope.ByoHost = &host
+	machineScope.ByoMachine.Status.HostInfo = host.Status.HostDetails
+	conditions.MarkTrue(machineScope.ByoMachine, infrav1.ByoHostAttached)
 	return ctrl.Result{}, nil
 }
 
@@ -535,4 +548,50 @@ func (r *ByoMachineReconciler) markHostForCleanup(ctx context.Context, machineSc
 
 	// Issue the patch for byohost
 	return helper.Patch(ctx, machineScope.ByoHost)
+}
+
+// reconcileExternal handles generic unstructured objects referenced by a ByoMachine.
+func (r *ByoMachineReconciler) reconcileExternal(ctx context.Context, cluster *clusterv1.Cluster, m *infrav1.ByoMachine, ref *corev1.ObjectReference) (external.ReconcileOutput, error) {
+	log := ctrl.LoggerFrom(ctx, "cluster", cluster.Name)
+
+	obj, err := external.Get(ctx, r.Client, ref, m.Namespace)
+	if err != nil {
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			log.Info("could not find external ref, requeueing", "RefGVK", ref.GroupVersionKind(), "RefName", ref.Name, "Machine", m.Name, "Namespace", m.Namespace)
+			return external.ReconcileOutput{RequeueAfter: externalReadyWait}, nil
+		}
+		return external.ReconcileOutput{}, err
+	}
+
+	// if external ref is paused, return error.
+	if annotations.IsPaused(cluster, obj) {
+		log.V(3).Info("External object referenced is paused")
+		return external.ReconcileOutput{Paused: true}, nil
+	}
+
+	// Initialize the patch helper.
+	patchHelper, err := patch.NewHelper(obj, r.Client)
+	if err != nil {
+		return external.ReconcileOutput{}, err
+	}
+
+	// Set external object ControllerReference to the ByoMachine.
+	if err := controllerutil.SetControllerReference(m, obj, r.Client.Scheme()); err != nil {
+		return external.ReconcileOutput{}, err
+	}
+
+	// Set the Cluster label.
+	labels := obj.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+	labels[clusterv1.ClusterLabelName] = cluster.Name
+	obj.SetLabels(labels)
+
+	// Always attempt to Patch the external object.
+	if err := patchHelper.Patch(ctx, obj); err != nil {
+		return external.ReconcileOutput{}, err
+	}
+
+	return external.ReconcileOutput{Result: obj}, nil
 }

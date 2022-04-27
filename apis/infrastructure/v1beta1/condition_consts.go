@@ -57,6 +57,9 @@ const (
 // Conditions and Reasons defined on BYOMachine
 const (
 
+	// ByoHostAttached documents the byohost is attched to byomachine
+	ByoHostAttached clusterv1.ConditionType = "ByoHostAttached"
+
 	// BYOHostReady documents the k8s node is ready and can take on workloads
 	BYOHostReady clusterv1.ConditionType = "BYOHostReady"
 
