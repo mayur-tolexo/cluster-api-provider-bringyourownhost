@@ -56,7 +56,6 @@ func (hr *HostRegistrar) Register(hostName, namespace string, hostLabels map[str
 				Namespace: namespace,
 				Labels:    hostLabels,
 			},
-			Spec:   infrastructurev1beta1.ByoHostSpec{},
 			Status: infrastructurev1beta1.ByoHostStatus{},
 		}
 		err = hr.K8sClient.Create(ctx, byoHost)
@@ -66,6 +65,10 @@ func (hr *HostRegistrar) Register(hostName, namespace string, hostLabels map[str
 		}
 	}
 
+	if err := hr.UpdateHostInfo(ctx, byoHost); err != nil {
+		klog.Errorf("error updating host %s info %s, err=%v", hostName, err)
+		return err
+	}
 	// run it at startup or reboot
 	return hr.UpdateNetwork(ctx, byoHost)
 }
@@ -79,6 +82,23 @@ func (hr *HostRegistrar) UpdateNetwork(ctx context.Context, byoHost *infrastruct
 	}
 
 	byoHost.Status.Network = hr.GetNetworkStatus()
+
+	return helper.Patch(ctx, byoHost)
+}
+
+// UpdateHostInfo updates the hostinfo the host
+func (hr *HostRegistrar) UpdateHostInfo(ctx context.Context, byoHost *infrastructurev1beta1.ByoHost) error {
+	klog.Info("Add Host Info")
+	helper, err := patch.NewHelper(byoHost, hr.K8sClient)
+	if err != nil {
+		return err
+	}
+
+	byoHost.Status.HostDetails = infrastructurev1beta1.HostInfo{
+		OSName:       "Ubuntu",
+		OSImage:      "20.04",
+		Architecture: "x86-64",
+	}
 
 	return helper.Patch(ctx, byoHost)
 }
