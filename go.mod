@@ -26,7 +26,7 @@ require (
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/cluster-api v1.1.3
 	sigs.k8s.io/cluster-api/test v1.1.3
-	sigs.k8s.io/controller-runtime v0.11.1
+	sigs.k8s.io/controller-runtime v0.11.2
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -181,8 +181,8 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/apiextensions-apiserver v0.23.0 // indirect
-	k8s.io/apiserver v0.23.0 // indirect
+	k8s.io/apiextensions-apiserver v0.23.5 // indirect
+	k8s.io/apiserver v0.23.5 // indirect
 	k8s.io/cloud-provider v0.21.0 // indirect
 	k8s.io/cluster-bootstrap v0.23.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
