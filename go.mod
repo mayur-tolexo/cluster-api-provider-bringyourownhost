@@ -6,7 +6,7 @@ replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.1.3
 
 require (
 	github.com/cppforlife/go-cli-ui v0.0.0-20200716203538-1e47f820817f
-	github.com/docker/cli v20.10.16+incompatible
+	github.com/docker/cli v23.0.1+incompatible
 	github.com/docker/docker v20.10.16+incompatible
 	github.com/go-logr/logr v1.2.2
 	github.com/jackpal/gateway v1.0.7
@@ -20,6 +20,7 @@ require (
 	k8s.io/api v0.24.1
 	k8s.io/apimachinery v0.24.1
 	k8s.io/client-go v0.24.1
+	k8s.io/cluster-bootstrap v0.23.0
 	k8s.io/component-base v0.24.1
 	k8s.io/klog/v2 v2.60.1
 	k8s.io/kubectl v0.24.1
@@ -124,6 +125,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/sys/mount v0.2.0 // indirect
 	github.com/moby/sys/mountinfo v0.5.0 // indirect
+	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -183,7 +185,6 @@ require (
 	k8s.io/apiextensions-apiserver v0.23.5 // indirect
 	k8s.io/apiserver v0.23.5 // indirect
 	k8s.io/cloud-provider v0.21.0 // indirect
-	k8s.io/cluster-bootstrap v0.23.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	k8s.io/legacy-cloud-providers v0.21.0 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
